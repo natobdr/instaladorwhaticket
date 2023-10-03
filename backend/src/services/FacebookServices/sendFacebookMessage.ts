@@ -12,15 +12,10 @@ interface Request {
 
 const SendWhatsAppMessage = async ({ body, ticket }: Request): Promise<any> => {
   const { number } = ticket.contact;
-  try {
-    await sendText(
-      number,
-      formatBody(body, ticket.contact),
-      ticket.whatsapp.facebookUserToken
-    );
 
+  try {
     await ticket.update({ lastMessage: body });
-    
+    sendText(number, formatBody(body, ticket.contact));
   } catch (err) {
     console.log(err);
     throw new AppError("ERR_SENDING_FACEBOOK_MSG");

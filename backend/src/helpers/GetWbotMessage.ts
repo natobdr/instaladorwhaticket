@@ -14,7 +14,7 @@ export const GetWbotMessage = async (
   let limit = 20;
 
   const fetchWbotMessagesGradually = async (): Promise<
-    proto.WebMessageInfo | Message | null | undefined
+    proto.WebMessageInfo | Message
   > => {
     if (getSock.type === "legacy") {
       const wbot: WALegacySocket = getSock;
@@ -27,8 +27,8 @@ export const GetWbotMessage = async (
 
       const msgFound = chatMessages.find(msg => msg.key.id === messageId);
 
-      if (!msgFound && limit < 400) {
-        limit += 50;
+      if (!msgFound && limit < 100) {
+        limit += 20;
         return fetchWbotMessagesGradually();
       }
 

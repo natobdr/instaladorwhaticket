@@ -1,5 +1,4 @@
 import { WALegacySocket, WAMessage } from "@adiwajshing/baileys";
-import * as Sentry from "@sentry/node";
 import AppError from "../../errors/AppError";
 import GetTicketWbot from "../../helpers/GetTicketWbot";
 import Message from "../../models/Message";
@@ -42,24 +41,23 @@ const SendWhatsAppMessage = async ({
         }
       });
 
-      if (chatMessages) {
-        const msgFound = JSON.parse(chatMessages.dataJson);
+      const msgFound = JSON.parse(JSON.stringify(chatMessages.dataJson));
 
-        options = {
-          quoted: {
-            key: msgFound.key,
-            message: {
-              extendedTextMessage: msgFound.message.extendedTextMessage
-            }
+      options = {
+        quoted: {
+          key: msgFound.key,
+          message: {
+            extendedTextMessage: msgFound.message.extendedTextMessage
           }
-        };
-      }
-      console.log(chatMessages)
+        }
+      };
     }
   }
 
   try {
-    const sentMessage = await wbot.sendMessage(number,{
+    const sentMessage = await wbot.sendMessage(
+      number,
+      {
         text: formatBody(body, ticket.contact)
       },
       {
@@ -69,8 +67,6 @@ const SendWhatsAppMessage = async ({
     await ticket.update({ lastMessage: formatBody(body, ticket.contact) });
     return sentMessage;
   } catch (err) {
-    Sentry.captureException(err);
-    console.log(err);
     throw new AppError("ERR_SENDING_WAPP_MSG");
   }
 };

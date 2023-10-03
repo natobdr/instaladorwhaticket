@@ -1,6 +1,7 @@
 import { getIO } from "../../libs/socket";
 import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
+import Whatsapp from "../../models/Whatsapp";
 
 interface MessageData {
   id: string;
@@ -11,20 +12,16 @@ interface MessageData {
   read?: boolean;
   mediaType?: string;
   mediaUrl?: string;
-  ack?: number;
-  queueId?: number;
-  channel?: string;
+  textMassMessage?: string
 }
 interface Request {
   messageData: MessageData;
-  companyId: number;
 }
 
 const CreateMessageService = async ({
-  messageData,
-  companyId
+  messageData
 }: Request): Promise<Message> => {
-  await Message.upsert({ ...messageData, companyId });
+  await Message.upsert(messageData);
 
   const message = await Message.findByPk(messageData.id, {
     include: [
@@ -32,7 +29,14 @@ const CreateMessageService = async ({
       {
         model: Ticket,
         as: "ticket",
-        include: ["contact", "queue"]
+        include: [
+          "contact", "queue",
+          {
+            model: Whatsapp,
+            as: "whatsapp",
+            attributes: ["name"]
+          }
+        ]
       },
       {
         model: Message,
@@ -42,10 +46,6 @@ const CreateMessageService = async ({
     ]
   });
 
-  if (message.ticket.queueId !== null && message.queueId === null) {
-    await message.update({ queueId: message.ticket.queueId });
-  }
-
   if (!message) {
     throw new Error("ERR_CREATING_MESSAGE");
   }
@@ -54,7 +54,7 @@ const CreateMessageService = async ({
   io.to(message.ticketId.toString())
     .to(message.ticket.status)
     .to("notification")
-    .emit(`company-${companyId}-appMessage`, {
+    .emit("appMessage", {
       action: "create",
       message,
       ticket: message.ticket,
